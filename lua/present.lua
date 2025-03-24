@@ -14,6 +14,7 @@ local function create_floating_window(config, enter)
 
   local buf = vim.api.nvim_create_buf(false, true) -- No file, scratch buffer
   local win = vim.api.nvim_open_win(buf, enter or false, config)
+  vim.api.nvim_win_set_option(win, 'winhl', 'Normal:Normal,FloatBorder:FloatBorder')
 
   return { buf = buf, win = win }
 end
@@ -252,7 +253,7 @@ local create_window_configurations = function()
       border = "rounded",
       col = 0,
       row = 0,
-      zindex = 2,
+      zindex = 3,
     },
     body = {
       relative = "editor",
@@ -262,12 +263,14 @@ local create_window_configurations = function()
       border = { " ", " ", " ", " ", " ", " ", " ", " " },
       col = 8,
       row = 4,
+      zindex = 2,
     },
     footer = {
       relative = "editor",
       width = width,
       height = 1,
       style = "minimal",
+      border = { " ", "━", " ", " ", " ", " ", " ", " " },
       -- TODO: Just a border on the top?
       -- border = "rounded",
       col = 0,
@@ -369,10 +372,9 @@ M.start_presentation = function(opts)
     vim.list_extend(output, executor(block))
     table.insert(output, "```")
 
-    local buf = vim.api.nvim_create_buf(false, true) -- No file, scratch buffer
     local temp_width = math.floor(vim.o.columns * 0.8)
     local temp_height = math.floor(vim.o.lines * 0.8)
-    local win_id = vim.api.nvim_open_win(buf, true, {
+    local code = create_floating_window({
       relative = "editor",
       style = "minimal",
       noautocmd = true,
@@ -381,12 +383,12 @@ M.start_presentation = function(opts)
       row = math.floor((vim.o.lines - temp_height) / 2),
       col = math.floor((vim.o.columns - temp_width) / 2),
       border = "rounded",
-    })
+    }, true)
 
-    vim.bo[buf].filetype = "markdown"
-    vim.api.nvim_buf_set_lines(buf, 0, -1, false, output)
-    vim.keymap.set("n", "q", function() vim.api.nvim_win_close(win_id, true) end, {
-      buffer = buf,
+    vim.bo[code.buf].filetype = "markdown"
+    vim.api.nvim_buf_set_lines(code.buf, 0, -1, false, output)
+    vim.keymap.set("n", "q", function() vim.api.nvim_win_close(code.win, true) end, {
+      buffer = code.buf,
     })
   end)
 
