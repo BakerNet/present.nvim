@@ -76,15 +76,6 @@ M.create_system_executor = function(program)
   end
 end
 
-local defaults = {
-  executors = {
-    lua = execute_lua_code,
-    javascript = M.create_system_executor("node"),
-    python = M.create_system_executor("python"),
-    rust = execute_rust_code,
-  },
-}
-
 ---@class present.Options
 ---@field executors table<string, function>: The executors for the different languages
 ---@field syntax present.SyntaxOptions: The syntax for the plugin
@@ -99,13 +90,18 @@ local options = {
     comment = "%%",
     stop = "<!%-%-%s*stop%s*%-%->",
   },
-  executors = {},
+  executors = {
+    lua = execute_lua_code,
+    javascript = M.create_system_executor("node"),
+    python = M.create_system_executor("python"),
+    rust = execute_rust_code,
+  },
 }
 
 --- Setup the plugin
 ---@param opts present.Options
 M.setup = function(opts)
-  options = vim.tbl_deep_extend("force", defaults, opts or {})
+  options = vim.tbl_deep_extend("force", options, opts or {})
 end
 
 ---@class present.Slides
@@ -166,18 +162,18 @@ local parse_slides = function(lines)
     local start_row, _, end_row, _ = node:range()
     current_slide.title = lines[start_row + 1]
     local codeblocks = vim
-      .iter(codeblock_query:iter_captures(root, contents, start_row, end_row))
-      :map(function(_, n)
-        local s, _, e, _ = n:range()
-        local language = vim.trim(string.sub(lines[s + 1], 4))
-        return {
-          language = language,
-          body = table.concat(vim.list_slice(lines, s + 2, e - 1), "\n"),
-          start_row = s + 1,
-          end_row = e,
-        }
-      end)
-      :totable()
+        .iter(codeblock_query:iter_captures(root, contents, start_row, end_row))
+        :map(function(_, n)
+          local s, _, e, _ = n:range()
+          local language = vim.trim(string.sub(lines[s + 1], 4))
+          return {
+            language = language,
+            body = table.concat(vim.list_slice(lines, s + 2, e - 1), "\n"),
+            start_row = s + 1,
+            end_row = e,
+          }
+        end)
+        :totable()
 
     local comment = options.syntax.comment
     local stop = options.syntax.stop
@@ -234,8 +230,8 @@ local create_window_configurations = function()
   local width = vim.o.columns
   local height = vim.o.lines
 
-  local header_height = 1 + 2 -- 1 + border
-  local footer_height = 1 -- 1, no border
+  local header_height = 1 + 2                                        -- 1 + border
+  local footer_height = 1                                            -- 1, no border
   local body_height = height - header_height - footer_height - 2 - 1 -- for our own border
 
   return {
@@ -376,7 +372,7 @@ M.start_presentation = function(opts)
     local buf = vim.api.nvim_create_buf(false, true) -- No file, scratch buffer
     local temp_width = math.floor(vim.o.columns * 0.8)
     local temp_height = math.floor(vim.o.lines * 0.8)
-    vim.api.nvim_open_win(buf, true, {
+    local win_id = vim.api.nvim_open_win(buf, true, {
       relative = "editor",
       style = "minimal",
       noautocmd = true,
@@ -389,6 +385,9 @@ M.start_presentation = function(opts)
 
     vim.bo[buf].filetype = "markdown"
     vim.api.nvim_buf_set_lines(buf, 0, -1, false, output)
+    vim.keymap.set("n", "q", function() vim.api.nvim_win_close(win_id, true) end, {
+      buffer = buf,
+    })
   end)
 
   local restore = {
