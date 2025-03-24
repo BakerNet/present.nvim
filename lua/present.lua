@@ -399,7 +399,7 @@ M.start_presentation = function(opts)
     },
     guicursor = {
       original = vim.o.guicursor,
-      present = "n:NormalFloat",
+      present = "n:Normal",
     },
     wrap = {
       original = vim.o.wrap,
