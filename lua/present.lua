@@ -215,6 +215,8 @@ local parse_slides = function(lines)
     -- Process the lines: Add one for row->line, add one to skip the header
     local start_of_section = start_row + 2
     for idx = start_of_section, end_row do
+      local line = lines[idx]
+      if vim.startswith(line, '#') then break end
       process_line(idx)
     end
   end
