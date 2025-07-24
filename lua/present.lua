@@ -317,7 +317,7 @@ M.start_presentation = function(opts)
 
   foreach_float(function(_, float)
     vim.bo[float.buf].filetype = "markdown"
-    vim.bo[float.buf].linebreak = true
+    vim.wo[float.win].linebreak = true
   end)
 
   local set_slide_content = function(idx)
